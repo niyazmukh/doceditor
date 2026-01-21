@@ -477,6 +477,87 @@ code {
   margin-top: 12px;
 }
 
+.context-menu {
+  position: absolute;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 160px;
+  z-index: 1000;
+}
+
+.context-menu__item {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.context-menu__item:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.field-map__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.field-map__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.field-map__item:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.field-map__item--has-fields {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.field-map__item--has-fields:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.field-map__icon {
+  color: var(--muted);
+  font-size: 12px;
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.field-map__text {
+  flex: 1;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-map__badge {
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
 @media print {
   body {
     background: white;

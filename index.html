@@ -20,14 +20,14 @@
           <input id="fileInput" type="file" accept=".docx,.txt,.rtf,.doc" hidden />
           Import file
         </label>
-        <button id="btnExportTemplate" class="btn btn--ghost" type="button" title="Download a template backup (.json)">
-          Export template
+        <button id="btnExportTemplate" class="btn btn--ghost" type="button" title="Download a document backup (.json)">
+          Export document
         </button>
-        <label class="btn btn--ghost" title="Load a template backup (.json)">
+        <label class="btn btn--ghost" title="Load a document backup (.json)">
           <input id="templateInput" type="file" accept="application/json,.json" hidden />
-          Import template
+          Import document
         </label>
-        <button id="btnClear" class="btn btn--ghost" type="button" title="Clears saved template, fields, and values">
+        <button id="btnClear" class="btn btn--ghost" type="button" title="Clears saved document, fields, and values">
           Reset
         </button>
       </div>
@@ -36,20 +36,20 @@
     <main class="layout">
       <aside class="sidebar">
         <section class="panel">
-          <div class="panel__title panel__title--collapsible panel__title--collapsed" data-panel="library">Library</div>
+          <div class="panel__title panel__title--collapsible panel__title--collapsed" data-panel="library">Saved Documents</div>
           <div class="panel__body panel__body--collapsed" id="libraryPanel">
             <div class="row row--gap">
-              <select id="templateSelect" class="input" aria-label="Templates"></select>
+              <select id="templateSelect" class="input" aria-label="Saved Documents"></select>
               <button id="btnNewTemplate" class="btn btn--ghost" type="button">New</button>
               <button id="btnDeleteTemplate" class="btn btn--danger" type="button">Delete</button>
             </div>
             <div class="row row--gap" style="margin-top: 8px">
-              <select id="presetSelect" class="input" aria-label="Presets"></select>
+              <select id="presetSelect" class="input" aria-label="Saved Values"></select>
               <button id="btnSavePreset" class="btn btn--ghost" type="button">Save</button>
               <button id="btnLoadPreset" class="btn btn--ghost" type="button">Load</button>
               <button id="btnDeletePreset" class="btn btn--danger" type="button">Delete</button>
             </div>
-            <div class="hint">Templates store structure; presets store values/constants.</div>
+            <div class="hint">Documents store structure; saved values store filled data.</div>
           </div>
         </section>
 
@@ -62,6 +62,14 @@
             <div id="selectionHint" class="hint">
               Import a document, then highlight text in the preview.
             </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__title panel__title--collapsible panel__title--collapsed" data-panel="fieldmap">Document Map</div>
+          <div class="panel__body panel__body--collapsed" id="fieldMapPanel">
+            <div id="fieldMapList" class="field-map__list"></div>
+            <div class="hint">Click any section to jump to it in the document.</div>
           </div>
         </section>
 
@@ -102,7 +110,6 @@
               </select>
             </div>
             <div class="row row--gap">
-              <button id="btnPreviewFilled" class="btn btn--ghost" type="button">Preview filled</button>
               <button id="btnDownloadPdf" class="btn" type="button">Download PDF</button>
             </div>
             <div id="exportHint" class="hint">

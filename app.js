@@ -73,7 +73,6 @@
       pdfFileName: /** @type {HTMLInputElement} */ ($("pdfFileName")),
       textDirection: /** @type {HTMLSelectElement} */ ($("textDirection")),
 
-      btnPreviewFilled: /** @type {HTMLButtonElement} */ ($("btnPreviewFilled")),
       btnDownloadPdf: /** @type {HTMLButtonElement} */ ($("btnDownloadPdf")),
       tabTemplate: /** @type {HTMLButtonElement} */ ($("tabTemplate")),
       tabFilled: /** @type {HTMLButtonElement} */ ($("tabFilled")),
@@ -129,7 +128,10 @@
     if (!trimmed) return "";
     const d = new Date(`${trimmed}T00:00:00`);
     if (Number.isNaN(d.getTime())) return trimmed;
-    return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   function isValidIdentifier(name) {
@@ -285,7 +287,7 @@
     setTab("template");
     setExportEnabled(hasTemplate());
     updateSelectionUI();
-    setDocMeta(state.docName, "Template imported");
+    setDocMeta(state.docName, "Document imported");
   }
 
   function setTab(which) {
@@ -299,7 +301,6 @@
 
   function setExportEnabled(enabled) {
     if (!ui) return;
-    ui.btnPreviewFilled.setAttribute("aria-disabled", enabled ? "false" : "true");
     ui.btnDownloadPdf.setAttribute("aria-disabled", enabled ? "false" : "true");
     ui.tabFilled.setAttribute("aria-disabled", enabled ? "false" : "true");
   }
@@ -596,7 +597,7 @@
     const rec = {
       id: uid(),
       templateId: state.templateId,
-      name: String(name || "Preset").trim() || "Preset",
+      name: String(name || "Saved values").trim() || "Saved values",
       createdAt: now,
       updatedAt: now,
       valuesByFieldId: state.valuesByFieldId,
@@ -652,7 +653,7 @@
     if (templates.length === 0) {
       const opt = document.createElement("option");
       opt.value = "";
-      opt.textContent = "No templates";
+      opt.textContent = "No saved documents";
       ui.templateSelect.appendChild(opt);
       ui.templateSelect.disabled = true;
       ui.btnDeleteTemplate.disabled = true;
@@ -672,7 +673,7 @@
     ui.presetSelect.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "No preset selected";
+    placeholder.textContent = "No saved values selected";
     ui.presetSelect.appendChild(placeholder);
 
     const presets = state.templateId ? await listPresets(state.templateId) : [];
@@ -913,6 +914,106 @@
     });
   }
 
+  function setupRightClickMenu() {
+    if (!ui) return;
+    
+    // Remove any existing context menu
+    document.getElementById("contextMenu")?.remove();
+    
+    // Create context menu
+    const menu = document.createElement("div");
+    menu.id = "contextMenu";
+    menu.className = "context-menu hidden";
+    menu.innerHTML = '<div class="context-menu__item" data-action="createField">Create field here</div>';
+    document.body.appendChild(menu);
+    
+    ui.viewerTemplate.addEventListener("contextmenu", (e) => {
+      if (!hasTemplate()) return;
+      
+      const range = ensureSelectionInsideTemplate();
+      if (!range) return;
+      
+      e.preventDefault();
+      pendingSelectionRange = range.cloneRange();
+      
+      menu.style.left = `${e.pageX}px`;
+      menu.style.top = `${e.pageY}px`;
+      menu.classList.remove("hidden");
+    });
+    
+    document.addEventListener("click", () => {
+      menu.classList.add("hidden");
+    });
+    
+    menu.querySelector('[data-action="createField"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.classList.add("hidden");
+      openCreateFieldDialog();
+    });
+  }
+
+  function generateFieldMap() {
+    if (!ui || !hasTemplate()) return [];
+    
+    const blocks = ui.viewerTemplate.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li");
+    const map = [];
+    
+    blocks.forEach((block, idx) => {
+      const fields = block.querySelectorAll(".qtp-field");
+      const text = String(block.textContent ?? "").trim().slice(0, 40);
+      const type = block.tagName.toLowerCase();
+      
+      if (text) {
+        map.push({
+          index: idx,
+          text: text.length > 40 ? text + "..." : text,
+          fieldCount: fields.length,
+          type: type,
+          element: block
+        });
+      }
+    });
+    
+    return map;
+  }
+
+  function renderFieldMap() {
+    const container = document.getElementById("fieldMapList");
+    if (!container) return;
+    
+    const map = generateFieldMap();
+    container.innerHTML = "";
+    
+    if (map.length === 0) {
+      container.innerHTML = '<div class="hint">Import a document to see structure</div>';
+      return;
+    }
+    
+    map.forEach((item) => {
+      const div = document.createElement("div");
+      div.className = "field-map__item";
+      if (item.fieldCount > 0) div.classList.add("field-map__item--has-fields");
+      
+      const icon = item.type.startsWith("h") ? "#" : "▪";
+      div.innerHTML = `
+        <span class="field-map__icon">${icon}</span>
+        <span class="field-map__text">${escapeHtml(item.text)}</span>
+        ${item.fieldCount > 0 ? `<span class="field-map__badge">${item.fieldCount}</span>` : ""}
+      `;
+      
+      div.addEventListener("click", () => {
+        item.element.scrollIntoView({ behavior: "smooth", block: "center" });
+        item.element.style.transition = "background 0.3s";
+        item.element.style.background = "rgba(37, 99, 235, 0.1)";
+        setTimeout(() => {
+          item.element.style.background = "";
+        }, 1000);
+      });
+      
+      container.appendChild(div);
+    });
+  }
+
   function scrollToFieldInput(fieldId) {
     if (!ui) return;
     const fieldItems = ui.fieldsList.querySelectorAll(".item");
@@ -1015,6 +1116,7 @@
     updateInlinePreview();
     applyTextDirectionToViewers();
     setExportEnabled(hasTemplate());
+    renderFieldMap();
   }
 
   function renderFilled() {
@@ -1607,11 +1709,11 @@
       await flushSave();
       await loadTemplateById(nextId);
       await refreshLibraryUI();
-      setDocMeta(state.docName, `Switched to template: ${state.templateName}`);
+      setDocMeta(state.docName, `Switched to document: ${state.templateName}`);
     });
 
     ui.btnNewTemplate.addEventListener("click", async () => {
-      const name = prompt("Template name:", "New template") ?? "";
+      const name = prompt("Document name:", "New document") ?? "";
       const trimmed = name.trim();
       if (!trimmed) return;
       await flushSave();
@@ -1633,12 +1735,12 @@
       setTab("template");
       setExportEnabled(false);
       updateSelectionUI();
-      setDocMeta(null, `Created template: ${state.templateName}`);
+      setDocMeta(null, `Created document: ${state.templateName}`);
     });
 
     ui.btnDeleteTemplate.addEventListener("click", async () => {
       if (!state.templateId) return;
-      const ok = confirm(`Delete template "${state.templateName}"? This also deletes its presets.`);
+      const ok = confirm(`Delete document "${state.templateName}"? This also deletes its saved values.`);
       if (!ok) return;
       const toDelete = state.templateId;
       await flushSave();
@@ -1665,17 +1767,17 @@
       setTab("template");
       setExportEnabled(hasTemplate());
       updateSelectionUI();
-      setDocMeta(null, "Template deleted");
+      setDocMeta(null, "Document deleted");
     });
 
     ui.btnSavePreset.addEventListener("click", async () => {
       if (!state.templateId) return;
-      const name = prompt("Preset name:", "Preset") ?? "";
+      const name = prompt("Saved values name:", "Values 1") ?? "";
       const trimmed = name.trim();
       if (!trimmed) return;
       await savePresetNow(trimmed);
       await refreshLibraryUI();
-      setDocMeta(state.docName, `Saved preset: ${trimmed}`);
+      setDocMeta(state.docName, `Saved values: ${trimmed}`);
     });
 
     ui.btnLoadPreset.addEventListener("click", async () => {
@@ -1683,17 +1785,17 @@
       if (!presetId) return;
       await loadPresetById(presetId);
       await refreshLibraryUI();
-      setDocMeta(state.docName, "Preset loaded");
+      setDocMeta(state.docName, "Saved values loaded");
     });
 
     ui.btnDeletePreset.addEventListener("click", async () => {
       const presetId = ui.presetSelect.value;
       if (!presetId) return;
-      const ok = confirm("Delete selected preset?");
+      const ok = confirm("Delete selected saved values?");
       if (!ok) return;
       await deletePresetById(presetId);
       await refreshLibraryUI();
-      setDocMeta(state.docName, "Preset deleted");
+      setDocMeta(state.docName, "Saved values deleted");
     });
 
     ui.fileInput.addEventListener("change", async () => {
@@ -1732,7 +1834,7 @@
         const obj = JSON.parse(text);
         await importTemplateObject(obj);
       } catch (e) {
-        setDocMeta(state.docName, `Import template failed: ${String(e?.message ?? e)}`);
+        setDocMeta(state.docName, `Import document failed: ${String(e?.message ?? e)}`);
       }
     });
 
@@ -1774,15 +1876,6 @@
     ui.btnAddConst.addEventListener("click", addConstantFromInputs);
     ui.constValue.addEventListener("keydown", (e) => {
       if (e.key === "Enter") addConstantFromInputs();
-    });
-
-    ui.btnPreviewFilled.addEventListener("click", () => {
-      if (!hasTemplate()) {
-        setDocMeta(state.docName, "Import a .docx or .txt first.");
-        return;
-      }
-      renderFilled();
-      setTab("filled");
     });
 
     ui.btnDownloadPdf.addEventListener("click", () => downloadPdfSimple());
@@ -1834,6 +1927,7 @@
 
     (async () => {
       setupCollapsiblePanels();
+      setupRightClickMenu();
       setUpSelectionTracking();
       wireEvents();
       await loadState();
