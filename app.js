@@ -77,6 +77,7 @@
       btnDownloadPdf: /** @type {HTMLButtonElement} */ ($("btnDownloadPdf")),
       tabTemplate: /** @type {HTMLButtonElement} */ ($("tabTemplate")),
       tabFilled: /** @type {HTMLButtonElement} */ ($("tabFilled")),
+      toggleInlinePreview: /** @type {HTMLInputElement} */ ($("toggleInlinePreview")),
 
       docName: /** @type {HTMLSpanElement} */ ($("docName")),
       docStatus: /** @type {HTMLSpanElement} */ ($("docStatus")),
@@ -893,6 +894,78 @@
     return "";
   }
 
+  function setupCollapsiblePanels() {
+    document.querySelectorAll(".panel__title--collapsible").forEach((title) => {
+      title.addEventListener("click", () => {
+        const panel = title.getAttribute("data-panel");
+        const body = title.nextElementSibling;
+        if (!body) return;
+        
+        const isCollapsed = title.classList.contains("panel__title--collapsed");
+        if (isCollapsed) {
+          title.classList.remove("panel__title--collapsed");
+          body.classList.remove("panel__body--collapsed");
+        } else {
+          title.classList.add("panel__title--collapsed");
+          body.classList.add("panel__body--collapsed");
+        }
+      });
+    });
+  }
+
+  function scrollToFieldInput(fieldId) {
+    if (!ui) return;
+    const fieldItems = ui.fieldsList.querySelectorAll(".item");
+    for (const item of fieldItems) {
+      const inputs = item.querySelectorAll("input");
+      let found = false;
+      for (const input of inputs) {
+        if (input.dataset.fieldId === fieldId) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        item.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        item.classList.add("item--highlight");
+        setTimeout(() => item.classList.remove("item--highlight"), 2000);
+        break;
+      }
+    }
+  }
+
+  function highlightFieldInDocument(fieldId, highlight) {
+    if (!ui) return;
+    const spans = ui.viewerTemplate.querySelectorAll(`.qtp-field[data-field-id="${CSS.escape(fieldId)}"]`);
+    for (const span of spans) {
+      if (highlight) span.classList.add("qtp-field--highlight");
+      else span.classList.remove("qtp-field--highlight");
+    }
+  }
+
+  function updateInlinePreview() {
+    if (!ui) return;
+    const enabled = ui.toggleInlinePreview.checked;
+    if (enabled) {
+      ui.viewerTemplate.classList.add("viewer--inline-preview");
+      const spans = ui.viewerTemplate.querySelectorAll(".qtp-field[data-field-id]");
+      for (const span of spans) {
+        const id = span.getAttribute("data-field-id");
+        const field = state.fields.find((f) => f.id === id);
+        if (!field) continue;
+        const computed = computeFieldValue(field);
+        if (typeof computed === "object" && computed?.error) {
+          span.setAttribute("data-preview-value", "⚠️");
+        } else {
+          const text = String(computed ?? "");
+          span.setAttribute("data-preview-value", text ? `→ ${text}` : "");
+        }
+      }
+    } else {
+      ui.viewerTemplate.classList.remove("viewer--inline-preview");
+    }
+  }
+
   function decorateFieldSpans(root, { showComputed }) {
     const spans = root.querySelectorAll(".qtp-field[data-field-id]");
     for (const span of spans) {
@@ -929,6 +1002,17 @@
     if (!ui) return;
     ui.viewerTemplate.innerHTML = state.templateHtml || "";
     decorateFieldSpans(ui.viewerTemplate, { showComputed: false });
+    
+    // Add click handlers to fields for navigation
+    ui.viewerTemplate.querySelectorAll(".qtp-field[data-field-id]").forEach((span) => {
+      span.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const fieldId = span.getAttribute("data-field-id");
+        if (fieldId) scrollToFieldInput(fieldId);
+      });
+    });
+    
+    updateInlinePreview();
     applyTextDirectionToViewers();
     setExportEnabled(hasTemplate());
   }
@@ -1143,6 +1227,7 @@
       const nameInput = document.createElement("input");
       nameInput.className = "input";
       nameInput.value = field.name;
+      nameInput.dataset.fieldId = field.id;
 
       const typePill = document.createElement("span");
       typePill.className = "pill";
@@ -1150,6 +1235,7 @@
 
       const valueInput = document.createElement("input");
       valueInput.className = "input";
+      valueInput.dataset.fieldId = field.id;
       if (field.type === "formula") {
         valueInput.placeholder = "formula (e.g., licenses * price_per_license)";
         valueInput.value = field.formula ?? "";
@@ -1169,6 +1255,7 @@
         else state.valuesByFieldId[field.id] = valueInput.value;
         saveState();
         renderFilled();
+        updateInlinePreview();
       });
 
       nameInput.addEventListener("change", () => {
@@ -1177,6 +1264,10 @@
         saveState();
         renderFilled();
       });
+
+      // Add hover effect to highlight field in document
+      item.addEventListener("mouseenter", () => highlightFieldInDocument(field.id, true));
+      item.addEventListener("mouseleave", () => highlightFieldInDocument(field.id, false));
 
       btnDel.addEventListener("click", () => {
         deleteField(field.id);
@@ -1716,6 +1807,10 @@
       renderFilled();
       setTab("filled");
     });
+
+    ui.toggleInlinePreview.addEventListener("change", () => {
+      updateInlinePreview();
+    });
   }
 
   function init() {
@@ -1738,6 +1833,7 @@
     );
 
     (async () => {
+      setupCollapsiblePanels();
       setUpSelectionTracking();
       wireEvents();
       await loadState();

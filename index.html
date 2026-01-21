@@ -36,8 +36,8 @@
     <main class="layout">
       <aside class="sidebar">
         <section class="panel">
-          <div class="panel__title">Library</div>
-          <div class="panel__body">
+          <div class="panel__title panel__title--collapsible panel__title--collapsed" data-panel="library">Library</div>
+          <div class="panel__body panel__body--collapsed" id="libraryPanel">
             <div class="row row--gap">
               <select id="templateSelect" class="input" aria-label="Templates"></select>
               <button id="btnNewTemplate" class="btn btn--ghost" type="button">New</button>
@@ -74,8 +74,8 @@
         </section>
 
         <section class="panel">
-          <div class="panel__title">Constants</div>
-          <div class="panel__body">
+          <div class="panel__title panel__title--collapsible panel__title--collapsed" data-panel="constants">Constants</div>
+          <div class="panel__body panel__body--collapsed" id="constantsPanel">
             <div class="row row--gap">
               <input id="constName" class="input" placeholder="name (e.g., price_per_license)" />
               <input id="constValue" class="input" placeholder="value (e.g., 49.99)" />
@@ -125,6 +125,10 @@
         <div class="tabs">
           <button id="tabTemplate" class="tab tab--active" type="button">Template</button>
           <button id="tabFilled" class="tab" type="button">Filled</button>
+          <label class="tab" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input id="toggleInlinePreview" type="checkbox" style="margin: 0;" />
+            Inline preview
+          </label>
         </div>
 
         <div class="viewerWrap">

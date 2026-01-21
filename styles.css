@@ -98,6 +98,30 @@ code {
   font-weight: 650;
   border-bottom: 1px solid var(--border);
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.panel__title:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.panel__title--collapsible::after {
+  content: '▼';
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.panel__title--collapsed::after {
+  transform: rotate(-90deg);
+}
+
+.panel__body--collapsed {
+  display: none;
 }
 
 .panel__body {
@@ -252,6 +276,24 @@ code {
   unicode-bidi: plaintext;
 }
 
+.viewer--inline-preview .qtp-field::after {
+  content: attr(data-preview-value);
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.95em;
+}
+
+.viewer--inline-preview .qtp-field[data-has-value="true"]::after {
+  color: #059669;
+}
+
+.viewer--inline-preview .qtp-field[data-error="true"]::after {
+  color: var(--danger);
+  content: '⚠️';
+}
+
 .viewer p {
   margin: 0 0 10px 0;
 }
@@ -273,6 +315,14 @@ code {
   padding: 1px 3px;
   outline: 1px solid rgba(37, 99, 235, 0.35);
   background: rgba(255, 214, 0, 0.25);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qtp-field:hover {
+  outline: 2px solid rgba(37, 99, 235, 0.6);
+  background: rgba(255, 214, 0, 0.35);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .qtp-field[data-has-value="true"] {
@@ -280,9 +330,25 @@ code {
   background: rgba(37, 99, 235, 0.12);
 }
 
+.qtp-field[data-has-value="true"]:hover {
+  outline-color: rgba(37, 99, 235, 0.75);
+  background: rgba(37, 99, 235, 0.18);
+}
+
 .qtp-field[data-error="true"] {
   outline-color: rgba(180, 35, 24, 0.6);
   background: rgba(180, 35, 24, 0.12);
+}
+
+.qtp-field[data-error="true"]:hover {
+  outline-color: rgba(180, 35, 24, 0.8);
+  background: rgba(180, 35, 24, 0.18);
+}
+
+.qtp-field.qtp-field--highlight {
+  outline: 2px solid rgba(37, 99, 235, 0.9);
+  background: rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
 
 .list {
@@ -296,6 +362,13 @@ code {
   border-radius: 10px;
   padding: 10px;
   background: #fff;
+  transition: all 0.2s ease;
+}
+
+.item--highlight {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(37, 99, 235, 0.05);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .item--row {
