@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>QuoteToPDF</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__title">QuoteToPDF</div>
+        <div class="brand__subtitle">Import → mark fields → fill → PDF</div>
+      </div>
+      <div class="topbar__actions">
+        <label class="btn btn--ghost">
+          <input id="fileInput" type="file" accept=".docx,.txt,.rtf,.doc" hidden />
+          Import file
+        </label>
+        <button id="btnExportTemplate" class="btn btn--ghost" type="button" title="Download a template backup (.json)">
+          Export template
+        </button>
+        <label class="btn btn--ghost" title="Load a template backup (.json)">
+          <input id="templateInput" type="file" accept="application/json,.json" hidden />
+          Import template
+        </label>
+        <button id="btnClear" class="btn btn--ghost" type="button" title="Clears saved template, fields, and values">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <div class="panel__title">Library</div>
+          <div class="panel__body">
+            <div class="row row--gap">
+              <select id="templateSelect" class="input" aria-label="Templates"></select>
+              <button id="btnNewTemplate" class="btn btn--ghost" type="button">New</button>
+              <button id="btnDeleteTemplate" class="btn btn--danger" type="button">Delete</button>
+            </div>
+            <div class="row row--gap" style="margin-top: 8px">
+              <select id="presetSelect" class="input" aria-label="Presets"></select>
+              <button id="btnSavePreset" class="btn btn--ghost" type="button">Save</button>
+              <button id="btnLoadPreset" class="btn btn--ghost" type="button">Load</button>
+              <button id="btnDeletePreset" class="btn btn--danger" type="button">Delete</button>
+            </div>
+            <div class="hint">Templates store structure; presets store values/constants.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__title">Selection</div>
+          <div class="panel__body">
+            <div class="row">
+              <button id="btnCreateField" class="btn" type="button" disabled>Create field from selection</button>
+            </div>
+            <div id="selectionHint" class="hint">
+              Import a document, then highlight text in the preview.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__title">Fields</div>
+          <div class="panel__body">
+            <div id="fieldsEmpty" class="hint">No fields yet.</div>
+            <div id="fieldsList" class="list"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__title">Constants</div>
+          <div class="panel__body">
+            <div class="row row--gap">
+              <input id="constName" class="input" placeholder="name (e.g., price_per_license)" />
+              <input id="constValue" class="input" placeholder="value (e.g., 49.99)" />
+              <button id="btnAddConst" class="btn btn--ghost" type="button">Add</button>
+            </div>
+            <div id="constList" class="list"></div>
+            <div class="hint">
+              Use constants + field names inside formulas (e.g., <code>licenses * price_per_license</code>).
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__title">Output</div>
+          <div class="panel__body">
+            <div class="row row--gap">
+              <input id="pdfFileName" class="input" placeholder="PDF filename (optional)" />
+            </div>
+            <div class="row row--gap" style="margin-top: 8px">
+              <select id="textDirection" class="input" aria-label="Text direction">
+                <option value="auto">Direction: Auto</option>
+                <option value="ltr">Direction: LTR</option>
+                <option value="rtl">Direction: RTL</option>
+              </select>
+            </div>
+            <div class="row row--gap">
+              <button id="btnPreviewFilled" class="btn btn--ghost" type="button">Preview filled</button>
+              <button id="btnDownloadPdf" class="btn" type="button">Download PDF</button>
+            </div>
+            <div id="exportHint" class="hint">
+              Basic PDF output (paragraphs/line breaks). For perfect layout, print from Word.
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="content">
+        <div class="content__header">
+          <div class="content__title">Document</div>
+          <div class="content__meta">
+            <span id="docName">No file imported</span>
+            <span class="sep">•</span>
+            <span id="docStatus">Import a .docx or .txt to begin</span>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button id="tabTemplate" class="tab tab--active" type="button">Template</button>
+          <button id="tabFilled" class="tab" type="button">Filled</button>
+        </div>
+
+        <div class="viewerWrap">
+          <div id="viewerTemplate" class="viewer" tabindex="0" aria-label="Template viewer"></div>
+          <div id="viewerFilled" class="viewer viewer--filled hidden" tabindex="0" aria-label="Filled viewer"></div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="fieldDialog" class="dialog">
+      <form method="dialog" class="dialog__form">
+        <div class="dialog__title">Create field</div>
+        <div class="dialog__body">
+          <label class="label">
+            Name
+            <input id="fieldName" class="input" required placeholder="e.g., customer_name" />
+          </label>
+          <label class="label">
+            Type
+            <select id="fieldType" class="input">
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="date">Date</option>
+              <option value="formula">Formula</option>
+            </select>
+          </label>
+          <label id="fieldFormulaWrap" class="label hidden">
+            Formula
+            <input id="fieldFormula" class="input" placeholder="e.g., licenses * price_per_license * (1 - discount)" />
+          </label>
+          <label class="label">
+            <span>Apply</span>
+            <div class="row row--gap" style="justify-content: flex-start">
+              <label class="label" style="grid-auto-flow: column; align-items: center; gap: 8px">
+                <input id="applyAllMatches" type="checkbox" checked />
+                Apply to all identical matches
+              </label>
+              <label class="label" style="grid-auto-flow: column; align-items: center; gap: 8px">
+                <input id="matchCaseSensitive" type="checkbox" />
+                Case-sensitive
+              </label>
+            </div>
+          </label>
+          <div class="hint">
+            Tip: start with lowercase + underscores. Field names become variables in formulas.
+          </div>
+        </div>
+        <div class="dialog__actions">
+          <button class="btn btn--ghost" value="cancel" type="submit">Cancel</button>
+          <button id="btnConfirmCreateField" class="btn" value="ok" type="submit">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Libraries (vendored, offline-friendly) -->
+    <script src="vendor/mammoth.browser.min.js"></script>
+    <script src="vendor/expr-eval.bundle.min.js"></script>
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <script src="vendor/html2canvas.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
